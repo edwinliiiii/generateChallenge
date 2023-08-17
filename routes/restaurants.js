@@ -60,10 +60,12 @@ router.get('/top', async (req, res) => {
     else {
         try {
             const restaurantAvgScores = await Restaurant.aggregate([
+                { $match: { "grades.4": { $exists: true } } }, // if grades.4 exists, there is >= 5 reviews.
                 { $unwind: '$grades' },
                 { $group: { _id: {restaurant_id: '$restaurant_id', name: '$name'}, avgScore: { $avg: '$grades.score' }}},
                 { $sort: { avgScore: -1 }} // -1 indicates descending order
             ]);
+
             const unformattedTopN = restaurantAvgScores.slice(0, req.body.n);
             console.log(unformattedTopN);
             const formattedTopN = [];
@@ -73,6 +75,7 @@ router.get('/top', async (req, res) => {
                     avgScore: restaurant.avgScore
                 });
             });
+            console.log(formattedTopN);
             res.send(formattedTopN);
         } catch (err) {
             res.status(500).json({"message": err.message });
@@ -98,7 +101,7 @@ router.get('/specific', async (req, res) => {
     else {
         try {
             const nRestaurants = (await Restaurant.aggregate([
-                { $match: { borough: req.body.b, cuisine: req.body.c }},
+                { $match: { borough: req.body.b, cuisine: req.body.c } },
                 { $unwind: '$grades' },
                 { $group: { _id: {
                                 restaurant_id: '$restaurant_id', 
